@@ -1,0 +1,250 @@
+openapi: 3.0.3
+info:
+  title: Library API
+  description: This API manage a bookstore
+  contact:
+    email: dev@bookstore.com
+  version: 1.0.0
+servers:
+  - url: "{protocol}://{server}"
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: http
+      server:
+        default: localhost:3000
+tags:
+  - name: books
+    description: Everything about Books
+  - name: users
+    description: Everything about Users
+paths:
+  /axios/meteo:
+    get:
+      responses:
+        "200":
+          description: "OK"
+  /axios/books:
+    post:
+      requestBody:
+        $ref: "#/components/requestBodies/BookCreation"
+      responses:
+        "200":
+          description: "OK"
+  /users:
+    get:
+      tags:
+        - users
+      summary: Get all users
+      operationId: getAllUsers
+      responses:
+        "200":
+          description: Users fetched successfully
+    post:
+      tags:
+        - users
+      summary: Create a user
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, fullName]
+              properties:
+                username:
+                  type: string
+                  example: "user1"
+                fullName:
+                  type: string
+                  example: "Jean DUPONT"
+      responses:
+        "201":
+          description: User created successfully
+  /books:
+    get:
+      tags:
+        - books
+      summary: Get all books
+      description: Return all books available on the bookstore
+      operationId: getAllBooks
+      responses:
+        "200":
+          description: Books fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookList"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags:
+        - books
+      summary: Add a new book to the store
+      operationId: addBook
+      requestBody:
+        $ref: "#/components/requestBodies/BookCreation"
+      responses:
+        "201":
+          $ref: "#/components/responses/ResourceCreated"
+        "400":
+          $ref: "#/components/responses/InvalidBody"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /books/{id}:
+    get:
+      tags:
+        - books
+      summary: Get a book by its id
+      operationId: getBookById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - books
+      summary: Delete a book by its id
+      operationId: deleteBookById
+      parameters:
+        - $ref : '#/components/parameters/idInPath'
+      responses:
+        "200":
+          description: Book deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ success ]
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                    default: true
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    idInPath:
+      required: true
+      name: id
+      in: path
+      schema:
+        type: integer
+  schemas:
+    BookList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: true
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+    BookWithoutId:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "My book"
+        date:
+          type: string
+          format: date
+          example: "2022-10-25"
+    Book:
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+        - $ref: '#/components/schemas/BookWithoutId'
+  requestBodies:
+    BookCreation:
+      required: true
+      description: Book object that needs to be created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookWithoutId'
+  responses:
+    ResourceCreated:
+      description: "The resource has been created"
+      content:
+        application/json:
+          schema:
+            type: object
+            required : [ success, id ]
+            properties:
+              success:
+                type: boolean
+                default: true
+                example: true
+              id:
+                type: integer
+                example: 1
+                description: "The id of the ressource created"
+    NotFound:
+      description: "The resource specified is not found"
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ success, message ]
+            properties:
+              success:
+                type: boolean
+                default: false
+                example: false
+              message:
+                type: string
+                default: ""
+                example: "This ressource with this id is not found"
+    InvalidBody:
+      description: "The body sent to the request is invalid"
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ success, message ]
+            properties:
+              success:
+                type: boolean
+                default: false
+                example: false
+              message:
+                type: string
+                default: ""
+                example: "Please make sure that all args on the body are ok"
+    InternalServerError:
+      description: "An internal server error occurred"
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ success, message ]
+            properties:
+              success:
+                type: boolean
+                default: false
+                example: false
+              message:
+                type: string
+                default: "An unknown server error occurred"
+                example: "An unknown server error occurred"
